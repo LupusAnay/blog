@@ -1,4 +1,5 @@
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import inspect
 
 db = SQLAlchemy()
 
@@ -9,9 +10,8 @@ class BaseModel(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
 
     def as_dict(self) -> dict:
-        result = self.__dict__
-        result.pop('_sa_instance_state', None)
-        return result
+        return {c.key: getattr(self, c.key)
+                for c in inspect(self).mapper.column_attrs}
 
     def update(self, data: dict) -> None:
         self.__dict__.update(data)
