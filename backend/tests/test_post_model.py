@@ -11,8 +11,8 @@ class TestPostModel(BaseTestCase):
         assert 'title' in data
         assert 'body' in data
 
-        assert data['title'] is 'Hello'
-        assert data['body'] is 'world'
+        assert data['title'] == 'Hello'
+        assert data['body'] == 'world'
 
     def test_update_from_dict(self):
         post: Post = Post(title='Hello', body='world')
@@ -25,8 +25,8 @@ class TestPostModel(BaseTestCase):
         assert 'title' in updated_data
         assert 'body' in updated_data
 
-        assert updated_data['title'] is 'Updated'
-        assert updated_data['body'] is 'dlrow'
+        assert updated_data['title'] == 'Updated'
+        assert updated_data['body'] == 'dlrow'
 
     def test_as_dict_with_id(self, app):
         post: Post = Post(title='Hello', body='world')
@@ -34,6 +34,12 @@ class TestPostModel(BaseTestCase):
         db.session.commit()
         data: dict = post.as_dict()
 
-        assert post.id is 1
+        assert post.id == 1
+
         assert 'id' in data
-        assert data['id'] is 1
+        assert 'title' in data
+        assert 'body' in data
+
+        assert data['id'] == 1
+        assert data['title'] == 'Hello'
+        assert data['body'] == 'world'

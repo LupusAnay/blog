@@ -12,9 +12,10 @@ class TestIndexPage(BaseTestCase):
                              range(1, 100)]
         [db.session.add(post) for post in posts]
         db.session.commit()
-        response: Response = client.get('/')
+        response: Response = client.get('/posts')
 
-        assert response.status_code is 200
+        assert response.status_code == 200
         assert response.content_type == 'application/json'
         assert response.get_json()
+        assert len(response.get_json()) == 99
 
