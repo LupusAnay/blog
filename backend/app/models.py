@@ -9,7 +9,9 @@ class BaseModel(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
 
     def as_dict(self) -> dict:
-        return self.__dict__
+        result = self.__dict__
+        result.pop('_sa_instance_state', None)
+        return result
 
     def update(self, data: dict) -> None:
         self.__dict__.update(data)
