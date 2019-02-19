@@ -19,7 +19,7 @@ class TestPostModel(BaseTestCase):
 
         data: dict = {'title': 'Updated', 'body': 'dlrow'}
 
-        post.update(data)
+        post.update(**data)
         updated_data = post.as_dict()
 
         assert 'title' in updated_data
@@ -27,6 +27,9 @@ class TestPostModel(BaseTestCase):
 
         assert updated_data['title'] == 'Updated'
         assert updated_data['body'] == 'dlrow'
+
+        assert post.body == 'dlrow'
+        assert post.title == 'Updated'
 
     def test_as_dict_with_id(self, app):
         post: Post = Post(title='Hello', body='world')

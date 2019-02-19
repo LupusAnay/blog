@@ -13,8 +13,12 @@ class BaseModel(db.Model):
         return {c.key: getattr(self, c.key)
                 for c in inspect(self).mapper.column_attrs}
 
-    def update(self, data: dict) -> None:
-        self.__dict__.update(data)
+    def update(self, **kwargs) -> None:
+        columns = inspect(self).mapper.column_attrs
+        for key, value in kwargs.items():
+            if key not in columns:
+                raise ValidationError(f'Cannot update: {key} does not exist')
+            setattr(self, key, value)
 
 
 class ValidationError(BaseException):
