@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Dict
 
 from flask import Response
 
@@ -16,8 +16,11 @@ class TestPostsView(BaseTestCase):
 
         assert response.status_code == 200
         assert response.content_type == 'application/json'
-        assert response.get_json()
-        assert len(response.get_json()) == 100
+
+        data = response.get_json()
+
+        assert data
+        assert len(data) == 100
 
     def test_post_method(self, client):
         data = {'title': 'Hello', 'body': 'World'}
@@ -26,130 +29,160 @@ class TestPostsView(BaseTestCase):
 
         assert response.status_code == 200
         assert response.content_type == 'application/json'
-        assert response.get_json()
-        assert 'id' in response.get_json()
-        assert response.get_json()['id'] == 1
 
-        post: Post = Post.query.filter_by(id=response.get_json()['id']).first()
+        response_data = response.get_json()
+
+        assert response_data
+        assert 'id' in response_data
+        assert response_data['id'] == 1
+
+        post: Post = Post.query.filter_by(id=response_data['id']).first()
 
         assert post.id == 1
         assert post.title == 'Hello'
         assert post.body == 'World'
 
-    def test_post_method_with_invalid_json(self, client):
-        data = {}
-
-        response: Response = client.post('/posts', json=data)
-
-        assert response.status_code == 400
-        assert response.get_json()
-        assert 'status' in response.get_json()
-        assert 'message' in response.get_json()
-        assert response.get_json().get('status') == 'error'
-
     def test_post_method_without_data(self, client):
         response: Response = client.post('/posts')
 
         assert response.status_code == 400
-        assert response.get_json()
-        assert 'status' in response.get_json()
-        assert 'message' in response.get_json()
-        assert response.get_json().get('status') == 'error'
 
-    def test_post_method_with_empty_values(self, client):
-        data = {'title': '', 'body': ''}
+        data = response.get_json()
 
-        response: Response = client.post('/posts', json=data)
+        assert data
+        assert 'status' in data
+        assert 'message' in data
+        assert data.get('status') == 'error'
 
-        assert response.status_code == 400
-        assert response.get_json()
-        assert 'status' in response.get_json()
-        assert 'message' in response.get_json()
-        assert response.get_json().get('status') == 'error'
+    def test_post_method_with_invalid_data(self, client):
+        data_array = {
+            'Invalid keys': {'foo': 'bar', 'baz': 'qux'},
+            'Non dictionary': 'hello',
+            'Empty values': {'title': '', 'body': ''},
+            'Spaces': {'title': ' ', 'body': ' '},
+            'Numbers': {'title': 1, 'body': 2},
+            'Redundant keys': {'title': 'foo', 'body': 'bar', 'baz': 'qux'}
+        }
 
-    def test_post_method_with_spaces_values(self, client):
-        data = {'title': '    ', 'body': '  '}
+        responses: Dict[str, Response] = {}
 
-        response: Response = client.post('/posts', json=data)
+        for name, data in data_array.items():
+            responses[name] = (client.post(f'/posts', json=data))
 
-        assert response.status_code == 400
-        assert response.get_json()
-        assert 'status' in response.get_json()
-        assert 'message' in response.get_json()
-        assert response.get_json().get('status') == 'error'
+        for name, response in responses.items():
+            assert response.status_code == 400, \
+                f'Assertion failed on `{name}` data'
 
-    def test_post_method_with_numbers_values(self, client):
-        data = {'title': 1, 'body': 0}
+            data = response.get_json()
 
-        response: Response = client.post('/posts', json=data)
-
-        assert response.status_code == 400
-        assert response.get_json()
-        assert 'status' in response.get_json()
-        assert 'message' in response.get_json()
-        assert response.get_json().get('status') == 'error'
-
-    def test_post_method_with_bigger_json(self, client):
-        data = {'title': 'hello', 'body': 'world', 'title1': 'hello'}
-
-        response: Response = client.post('/posts', json=data)
-        assert response.status_code == 400
-        assert response.get_json()
-        assert 'status' in response.get_json()
-        assert 'message' in response.get_json()
-        assert response.get_json().get('status') == 'error'
+            assert data
+            assert 'status' in data
+            assert 'message' in data
+            assert data.get('status') == 'error'
 
     def test_get_by_id(self, client):
-        data = {'title': 'Hello', 'body': 'World'}
+        post: Post = Post(title='foo', body='bar')
+        db.session.add(post)
+        db.session.commit()
 
-        create_response: Response = client.post('/posts', json=data)
-
-        assert create_response.status_code == 200
-        assert 'id' in create_response.get_json()
-
-        post_id = create_response.get_json().get('id')
-        response: Response = client.get(f'/posts/{post_id}')
+        response: Response = client.get(f'/posts/{post.id}')
 
         assert response.status_code == 200
-        assert response.get_json()
-        assert 'id' in response.get_json()
-        assert 'title' in response.get_json()
-        assert 'body' in response.get_json()
-        assert response.get_json()['id'] == post_id
-        assert response.get_json()['body'] == data['body']
-        assert response.get_json()['title'] == data['title']
+
+        data: dict = response.get_json()
+
+        assert data
+        assert 'id' in data
+        assert 'title' in data
+        assert 'body' in data
+        assert data['id'] == post.id
+        assert data['body'] == post.body
+        assert data['title'] == post.title
 
     def test_get_by_id_with_invalid_id(self, client):
         response: Response = client.get('/posts/65')
 
         assert response.status_code == 404
-        assert response.get_json()
-        assert 'status' in response.get_json()
-        assert 'message' in response.get_json()
-        assert response.get_json().get('status') == 'error'
+
+        data = response.get_json()
+
+        assert data
+        assert 'status' in data
+        assert 'message' in data
+        assert data.get('status') == 'error'
 
     def test_put_method(self, client):
-        data = {'title': 'Hello', 'body': 'World'}
+        post: Post = Post(title='foo', body='bar')
+        db.session.add(post)
+        db.session.commit()
 
-        create_response: Response = client.post('/posts', json=data)
+        data = {'title': 'Updated', 'body': 'dlroW'}
 
-        assert create_response.status_code == 200
-        assert 'id' in create_response.get_json()
-        post_id = create_response.get_json().get('id')
+        response: Response = client.put(f'/posts/{post.id}', json=data)
 
-        updated_data = {'title': 'Updated', 'body': 'dlroW'}
-
-        response: Response = client.put(f'/posts/{post_id}', json=updated_data)
+        post = Post.query.filter_by(id=post.id).first()
 
         assert response.status_code == 204
 
-        updated_post: Response = client.get(f'/posts/{post_id}')
+        assert post.body == data['body']
+        assert post.title == data['title']
 
-        assert updated_post.status_code == 200
-        assert updated_post.get_json()
-        assert 'id' in updated_post.get_json()
-        assert 'title' in updated_post.get_json()
-        assert 'body' in updated_post.get_json()
-        assert updated_post.get_json()['id'] == post_id
-        assert updated_post.get_json()['body'] == updated_data['body']
-        assert updated_post.get_json()['title'] == updated_data['title']
+    def test_put_method_with_invalid_id(self, client):
+        updated_data = {'title': 'Updated', 'body': 'dlroW'}
+
+        response: Response = client.put('/posts/65', json=updated_data)
+
+        assert response.status_code == 404
+
+        data = response.get_json()
+
+        assert data
+        assert 'status' in data
+        assert 'message' in data
+        assert data.get('status') == 'error'
+
+    def test_put_method_without_data(self, client):
+        post: Post = Post(title='foo', body='bar')
+        db.session.add(post)
+        db.session.commit()
+
+        response: Response = client.put(f'/posts/{post.id}')
+
+        assert response.status_code == 400
+
+        data = response.get_json()
+
+        assert data
+        assert 'status' in data
+        assert 'message' in data
+        assert data.get('status') == 'error'
+
+    def test_put_method_with_invalid_data(self, client):
+        post: Post = Post(title='foo', body='bar')
+        db.session.add(post)
+        db.session.commit()
+
+        data_array = {
+            'Invalid keys': {'foo': 'bar', 'baz': 'qux'},
+            'Non dictionary': 'hello',
+            'Empty values': {'title': '', 'body': ''},
+            'Spaces': {'title': ' ', 'body': ' '},
+            'Numbers': {'title': 1, 'body': 2},
+            'Redundant keys': {'title': 'foo', 'body': 'bar', 'baz': 'qux'}
+        }
+
+        responses: Dict[str, Response] = {}
+
+        for name, data in data_array.items():
+            responses[name] = (client.put(f'/posts/{post.id}', json=data))
+
+        for name, response in responses.items():
+            assert response.status_code == 400, \
+                f'Assertion failed on `{name}` data'
+
+            data = response.get_json()
+
+            assert data
+            assert 'status' in data
+            assert 'message' in data
+            assert data.get('status') == 'error'
