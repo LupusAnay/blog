@@ -22,9 +22,11 @@ def create_post():
 
     try:
         post: Post = Post(**data)
-    except ValidationError as e:
-        current_app.logger.debug(f'Raised validation error: {e.message}')
-        return jsonify(status='error', message=e.message), 400
+    except ValidationError as exception:
+        current_app.logger.debug(
+            f'Raised validation error: {exception.message}'
+        )
+        return jsonify(status='error', message=exception.message), 400
 
     current_app.logger.debug(f'Created Post entry: {post}')
     db.session.add(post)
