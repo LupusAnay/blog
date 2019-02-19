@@ -9,9 +9,20 @@ posts_blueprint = Blueprint('posts', __name__, url_prefix='/posts')
 
 @posts_blueprint.route('/<int:post_id>', methods=['PUT'])
 def update_post(post_id: int):
-    post: Post = Post.query.filter_by(id=post_id).first()
     data = request.get_json()
-    post.update(**data)
+    post: Post = Post.query.filter_by(id=post_id).first()
+
+    if not post:
+        return jsonify(status='error', message='no such entry'), 404
+
+    if type(data) is not dict:
+        return jsonify(status='error', message='wrong json'), 400
+
+    try:
+        post.update(**data)
+    except ValidationError as exception:
+        return jsonify(status='error', message=exception.message), 400
+
     db.session.commit()
     current_app.logger.debug(post.body)
     return '', 204
@@ -35,7 +46,7 @@ def get_posts():
 def create_post():
     data: dict = request.get_json()
 
-    if not data:
+    if not data or type(data) is not dict:
         return jsonify(status='error', message='wrong json'), 400
 
     try:
