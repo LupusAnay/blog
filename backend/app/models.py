@@ -29,7 +29,9 @@ class BaseModel(db.Model):
         columns = inspect(self).mapper.column_attrs
         for key, value in kwargs.items():
             if key not in columns:
-                raise ValidationError(f'Cannot update: {key} does not exist')
+                raise TypeError(
+                    f'Cannot update: {key} does not exist, check your '
+                    f'_validate_data() method')
             setattr(self, key, value)
 
 

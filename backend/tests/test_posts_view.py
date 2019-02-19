@@ -56,6 +56,7 @@ class TestPostsView(BaseTestCase):
 
     def test_post_method_with_invalid_data(self, client):
         data_array = {
+            'Empty data': None,
             'Invalid keys': {'foo': 'bar', 'baz': 'qux'},
             'Non dictionary': 'hello',
             'Empty values': {'title': '', 'body': ''},
@@ -163,6 +164,7 @@ class TestPostsView(BaseTestCase):
         db.session.commit()
 
         data_array = {
+            'Empty data': None,
             'Invalid keys': {'foo': 'bar', 'baz': 'qux'},
             'Non dictionary': 'hello',
             'Empty values': {'title': '', 'body': ''},

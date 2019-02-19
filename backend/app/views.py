@@ -46,7 +46,7 @@ def get_posts():
 def create_post():
     data: dict = request.get_json()
 
-    if not data or type(data) is not dict:
+    if type(data) is not dict:
         return jsonify(status='error', message='wrong json'), 400
 
     try:
