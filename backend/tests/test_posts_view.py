@@ -127,3 +127,29 @@ class TestPostsView(BaseTestCase):
         assert 'status' in response.get_json()
         assert 'message' in response.get_json()
         assert response.get_json().get('status') == 'error'
+
+    def test_put_method(self, client):
+        data = {'title': 'Hello', 'body': 'World'}
+
+        create_response: Response = client.post('/posts', json=data)
+
+        assert create_response.status_code == 200
+        assert 'id' in create_response.get_json()
+        post_id = create_response.get_json().get('id')
+
+        updated_data = {'title': 'Updated', 'body': 'dlroW'}
+
+        response: Response = client.put(f'/posts/{post_id}', json=updated_data)
+
+        assert response.status_code == 204
+
+        updated_post: Response = client.get(f'/posts/{post_id}')
+
+        assert updated_post.status_code == 200
+        assert updated_post.get_json()
+        assert 'id' in updated_post.get_json()
+        assert 'title' in updated_post.get_json()
+        assert 'body' in updated_post.get_json()
+        assert updated_post.get_json()['id'] == post_id
+        assert updated_post.get_json()['body'] == updated_data['body']
+        assert updated_post.get_json()['title'] == updated_data['title']

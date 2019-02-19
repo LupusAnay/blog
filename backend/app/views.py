@@ -7,7 +7,17 @@ from app.models import Post, db, ValidationError
 posts_blueprint = Blueprint('posts', __name__, url_prefix='/posts')
 
 
-@posts_blueprint.route('/<int:post_id>')
+@posts_blueprint.route('/<int:post_id>', methods=['PUT'])
+def update_post(post_id: int):
+    post: Post = Post.query.filter_by(id=post_id).first()
+    data = request.get_json()
+    post.update(**data)
+    db.session.commit()
+    current_app.logger.debug(post.body)
+    return '', 204
+
+
+@posts_blueprint.route('/<int:post_id>', methods=['GET'])
 def get_post(post_id: int):
     post: Post = Post.query.filter_by(id=post_id).first()
     if not post:
