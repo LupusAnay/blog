@@ -7,6 +7,16 @@ from app.models import Post, db, ValidationError
 posts_blueprint = Blueprint('posts', __name__, url_prefix='/posts')
 
 
+@posts_blueprint.route('/<int:post_id>', methods=['DELETE'])
+def delete_post(post_id: int):
+    post: Post = Post.query.filter_by(id=post_id).first()
+    if not post:
+        return jsonify(status='error',
+                       message='post with such id does not exist'), 404
+    db.session.delete(post)
+    return '', 204
+
+
 @posts_blueprint.route('/<int:post_id>', methods=['PUT'])
 def update_post(post_id: int):
     data = request.get_json()

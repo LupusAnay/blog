@@ -176,7 +176,7 @@ class TestPostsView(BaseTestCase):
         responses: Dict[str, Response] = {}
 
         for name, data in data_array.items():
-            responses[name] = (client.put(f'/posts/{post.id}', json=data))
+            responses[name] = client.put(f'/posts/{post.id}', json=data)
 
         for name, response in responses.items():
             assert response.status_code == 400, \
@@ -188,3 +188,22 @@ class TestPostsView(BaseTestCase):
             assert 'status' in data
             assert 'message' in data
             assert data.get('status') == 'error'
+
+    def test_delete_method(self, client):
+        post: Post = Post(title='foo', body='bar')
+        db.session.add(post)
+        db.session.commit()
+
+        response: Response = client.delete(f'/posts/{post.id}')
+
+        assert response.status_code == 204
+
+    def test_delete_method_with_invalid_id(self, client):
+        response: Response = client.delete('/posts/65')
+
+        data = response.get_json()
+        assert response.status_code == 404
+        assert data
+        assert 'status' in data
+        assert 'message' in data
+        assert data['status'] == 'error'
