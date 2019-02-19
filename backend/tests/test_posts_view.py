@@ -9,7 +9,7 @@ from tests.base_test_case import BaseTestCase
 class TestPostsView(BaseTestCase):
     def test_get_method(self, client):
         posts: List[Post] = [Post(title=str(x), body=str(x)) for x in
-                             range(1, 100)]
+                             range(100)]
         [db.session.add(post) for post in posts]
         db.session.commit()
         response: Response = client.get('/posts')
@@ -17,7 +17,7 @@ class TestPostsView(BaseTestCase):
         assert response.status_code == 200
         assert response.content_type == 'application/json'
         assert response.get_json()
-        assert len(response.get_json()) == 99
+        assert len(response.get_json()) == 100
 
     def test_post_method(self, client):
         data = {'title': 'Hello', 'body': 'World'}
@@ -90,14 +90,39 @@ class TestPostsView(BaseTestCase):
         assert response.get_json().get('status') == 'error'
 
     def test_post_method_with_bigger_json(self, client):
-        # Not sure about desired behavior here, should model complain about
-        # extra attributes, or just ignore it
-        # for this moment - ignore is desired
-
         data = {'title': 'hello', 'body': 'world', 'title1': 'hello'}
 
         response: Response = client.post('/posts', json=data)
         assert response.status_code == 400
+        assert response.get_json()
+        assert 'status' in response.get_json()
+        assert 'message' in response.get_json()
+        assert response.get_json().get('status') == 'error'
+
+    def test_get_by_id(self, client):
+        data = {'title': 'Hello', 'body': 'World'}
+
+        create_response: Response = client.post('/posts', json=data)
+
+        assert create_response.status_code == 200
+        assert 'id' in create_response.get_json()
+
+        post_id = create_response.get_json().get('id')
+        response: Response = client.get(f'/posts/{post_id}')
+
+        assert response.status_code == 200
+        assert response.get_json()
+        assert 'id' in response.get_json()
+        assert 'title' in response.get_json()
+        assert 'body' in response.get_json()
+        assert response.get_json()['id'] == post_id
+        assert response.get_json()['body'] == data['body']
+        assert response.get_json()['title'] == data['title']
+
+    def test_get_by_id_with_invalid_id(self, client):
+        response: Response = client.get('/posts/65')
+
+        assert response.status_code == 404
         assert response.get_json()
         assert 'status' in response.get_json()
         assert 'message' in response.get_json()
